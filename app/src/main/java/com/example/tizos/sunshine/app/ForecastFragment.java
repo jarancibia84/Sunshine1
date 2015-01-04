@@ -14,14 +14,20 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -29,6 +35,7 @@ import java.util.Collections;
 public class ForecastFragment extends Fragment  {
 
 
+    private String[] pruebaDearreglo;
 
     public ForecastFragment() {
     }
@@ -39,6 +46,9 @@ public class ForecastFragment extends Fragment  {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
 
+        FetchWeatherTask weatherTask = new FetchWeatherTask();
+weatherTask.execute("94043");
+        //String[] ListaForecast = weatherTask.execute("94043");
         //Lista de pronosticos
         String[] ListaForecast = { "Today - Sunny - 30/11",
                                 "Monday - Sunny - 33/10",
@@ -76,19 +86,21 @@ public class ForecastFragment extends Fragment  {
         return rootView;
     }
 
-    public class FetchWeatherTask extends AsyncTask<Integer, Void, Void> {
+    public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
 
         private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
         @Override
-        protected Void doInBackground(Integer... integers) {
+        protected String[] doInBackground(String... strings) {
             // These two need to be declared outside the try/catch
-// so that they can be closed in the finally block.
+            // so that they can be closed in the finally block.
+            Log.v(LOG_TAG, "inicie doinbackground");
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
-            Integer postCode = integers[0];
+            String postCode = strings[0];
 
-// Will contain the raw JSON response as a string.
+            // Will contain the raw JSON response as a string.
             String forecastJsonStr = null;
+            String[] forecastResult = null;
 
             try {
                 // Construct the URL for the OpenWeatherMap query
@@ -96,6 +108,7 @@ public class ForecastFragment extends Fragment  {
                 // http://openweathermap.org/API#forecast
 
                 //URI for http
+
                 Uri.Builder newUrl = new Uri.Builder();
                 newUrl.scheme("http")
                     .authority("api.openweathermap.org")
@@ -103,7 +116,7 @@ public class ForecastFragment extends Fragment  {
                     .appendPath("2.5")
                     .appendPath("forecast")
                     .appendPath("daily")
-                    .appendQueryParameter("q","94043")
+                    .appendQueryParameter("q",strings[0])
                     .appendQueryParameter("mode","json")
                     .appendQueryParameter("units","metric")
                     .appendQueryParameter("cnt","7");
@@ -140,16 +153,36 @@ public class ForecastFragment extends Fragment  {
                     forecastJsonStr = null;
                 }
                 forecastJsonStr = buffer.toString();
+                /*
+                String WEATHER_DATA_FREMONT_JUN_4 = "{\"cod\":\"200\",\"message\":2.5405,\"city\":{\"id\":\"5350734\",\"name\":\"Fremont\",\"coord\":{\"lon\":-121.982,\"lat\":37.5509},\"country\":\"United States of America\",\"population\":0},\"cnt\":7,\"list\":[{\"dt\":1401912000,\"temp\":{\"day\":28.12,\"min\":12.74,\"max\":28.12,\"night\":12.74,\"eve\":23.73,\"morn\":28.12},\"pressure\":1004.41,\"humidity\":52,\"weather\":[{\"id\":800,\"main\":\"Clear\",\"description\":\"sky is clear\",\"icon\":\"01d\"}],\"speed\":2.41,\"deg\":263,\"clouds\":0},{\"dt\":1401998400,\"temp\":{\"day\":28.58,\"min\":10.3,\"max\":28.58,\"night\":10.3,\"eve\":22.76,\"morn\":16.08},\"pressure\":1002.75,\"humidity\":47,\"weather\":[{\"id\":800,\"main\":\"Clear\",\"description\":\"sky is clear\",\"icon\":\"01d\"}],\"speed\":3.13,\"deg\":261,\"clouds\":0},{\"dt\":1402084800,\"temp\":{\"day\":26.73,\"min\":11.2,\"max\":27.55,\"night\":11.2,\"eve\":22.94,\"morn\":12.53},\"pressure\":1001.79,\"humidity\":50,\"weather\":[{\"id\":800,\"main\":\"Clear\",\"description\":\"sky is clear\",\"icon\":\"01d\"}],\"speed\":2.01,\"deg\":267,\"clouds\":0},{\"dt\":1402171200,\"temp\":{\"day\":30.67,\"min\":11.81,\"max\":31.25,\"night\":11.81,\"eve\":25.92,\"morn\":15.5},\"pressure\":1001.95,\"humidity\":48,\"weather\":[{\"id\":800,\"main\":\"Clear\",\"description\":\"sky is clear\",\"icon\":\"01d\"}],\"speed\":1.91,\"deg\":271,\"clouds\":0},{\"dt\":1402257600,\"temp\":{\"day\":16.6,\"min\":10.32,\"max\":17.52,\"night\":12.62,\"eve\":17.52,\"morn\":10.32},\"pressure\":1003.29,\"humidity\":0,\"weather\":[{\"id\":800,\"main\":\"Clear\",\"description\":\"sky is clear\",\"icon\":\"01d\"}],\"speed\":2.84,\"deg\":292,\"clouds\":0},{\"dt\":1402344000,\"temp\":{\"day\":14.82,\"min\":10.66,\"max\":16.14,\"night\":11.97,\"eve\":16.14,\"morn\":10.66},\"pressure\":1009.02,\"humidity\":0,\"weather\":[{\"id\":500,\"main\":\"Rain\",\"description\":\"light rain\",\"icon\":\"10d\"}],\"speed\":3.72,\"deg\":305,\"clouds\":12},{\"dt\":1402430400,\"temp\":{\"day\":15.26,\"min\":9.84,\"max\":16.75,\"night\":12.76,\"eve\":16.75,\"morn\":9.84},\"pressure\":1009.9,\"humidity\":0,\"weather\":[{\"id\":800,\"main\":\"Clear\",\"description\":\"sky is clear\",\"icon\":\"01d\"}],\"speed\":5.87,\"deg\":325,\"clouds\":0}]}";
 
-                //Log para ver datos que llegan desde la consulta
-               Log.v(LOG_TAG,"Forecast JSON String " + forecastJsonStr);
+                try {
+                    JSONObject weather = new JSONObject(WEATHER_DATA_FREMONT_JUN_4);
+                    JSONArray days = weather.getJSONArray("list");
+                    JSONObject dayInfo = days.getJSONObject(6);
+                    JSONObject tempInfo = dayInfo.getJSONObject("temp");
+                    Double temperaturaMaxima = tempInfo.getDouble("max");
+                    Log.v(LOG_TAG, "Lista " + temperaturaMaxima);
 
+
+                } catch (JSONException e) {
+
+
+                    e.printStackTrace();
+                }
+
+                Log.v(LOG_TAG, "Forecast JSON String " + forecastJsonStr);
+                */
+
+                forecastResult = getWeatherDataFromJson(forecastJsonStr,7);
 
             } catch (IOException e) {
                 Log.e("PlaceholderFragment", "Error ", e);
                 // If the code didn't successfully get the weather data, there's no point in attempting
                 // to parse it.
                 forecastJsonStr = null;
+            } catch (JSONException e) {
+                e.printStackTrace();
             } finally{
                 if (urlConnection != null) {
                     urlConnection.disconnect();
@@ -163,7 +196,16 @@ public class ForecastFragment extends Fragment  {
                 }
             }
 
-            return null;
+            Log.v(LOG_TAG, "fin doinbackground");
+            return forecastResult;
+        }
+
+        protected void onPostExecute(String[] resultado)
+        {
+
+            pruebaDearreglo=resultado;
+            Log.v(LOG_TAG, "HOLAMUNDO");
+
         }
     }
 
@@ -185,10 +227,13 @@ public class ForecastFragment extends Fragment  {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_refresh) {
 
-            Integer[] array = {1} ;
-            FetchWeatherTask weatherTask = new FetchWeatherTask();
-            weatherTask.execute(array);
+            //String[] postalCode = {"94043"} ;
 
+            /*
+
+            FetchWeatherTask weatherTask = new FetchWeatherTask();
+            weatherTask.execute("94043");
+*/
             // Alternativa mas rapida
             // new FetchWeatherTask().execute();
 
@@ -198,5 +243,85 @@ public class ForecastFragment extends Fragment  {
 
         return super.onOptionsItemSelected(item);
     }
+
+    /* The date/time conversion code is going to be moved outside the asynctask later,
+ * so for convenience we're breaking it out into its own method now.
+ */
+    private String getReadableDateString(long time){
+        // Because the API returns a unix timestamp (measured in seconds),
+        // it must be converted to milliseconds in order to be converted to valid date.
+        Date date = new Date(time * 1000);
+        SimpleDateFormat format = new SimpleDateFormat("E, MMM d");
+        return format.format(date).toString();
+    }
+
+    /**
+     * Prepare the weather high/lows for presentation.
+     */
+    private String formatHighLows(double high, double low) {
+        // For presentation, assume the user doesn't care about tenths of a degree.
+        long roundedHigh = Math.round(high);
+        long roundedLow = Math.round(low);
+
+        String highLowStr = roundedHigh + "/" + roundedLow;
+        return highLowStr;
+    }
+
+    /**
+     * Take the String representing the complete forecast in JSON Format and
+     * pull out the data we need to construct the Strings needed for the wireframes.
+     *
+     * Fortunately parsing is easy:  constructor takes the JSON string and converts it
+     * into an Object hierarchy for us.
+     */
+    private String[] getWeatherDataFromJson(String forecastJsonStr, int numDays)
+            throws JSONException {
+
+        // These are the names of the JSON objects that need to be extracted.
+        final String OWM_LIST = "list";
+        final String OWM_WEATHER = "weather";
+        final String OWM_TEMPERATURE = "temp";
+        final String OWM_MAX = "max";
+        final String OWM_MIN = "min";
+        final String OWM_DATETIME = "dt";
+        final String OWM_DESCRIPTION = "main";
+
+        JSONObject forecastJson = new JSONObject(forecastJsonStr);
+        JSONArray weatherArray = forecastJson.getJSONArray(OWM_LIST);
+
+        String[] resultStrs = new String[numDays];
+        for(int i = 0; i < weatherArray.length(); i++) {
+            // For now, using the format "Day, description, hi/low"
+            String day;
+            String description;
+            String highAndLow;
+
+            // Get the JSON object representing the day
+            JSONObject dayForecast = weatherArray.getJSONObject(i);
+
+            // The date/time is returned as a long.  We need to convert that
+            // into something human-readable, since most people won't read "1400356800" as
+            // "this saturday".
+            long dateTime = dayForecast.getLong(OWM_DATETIME);
+            day = getReadableDateString(dateTime);
+
+            // description is in a child array called "weather", which is 1 element long.
+            JSONObject weatherObject = dayForecast.getJSONArray(OWM_WEATHER).getJSONObject(0);
+            description = weatherObject.getString(OWM_DESCRIPTION);
+
+            // Temperatures are in a child object called "temp".  Try not to name variables
+            // "temp" when working with temperature.  It confuses everybody.
+            JSONObject temperatureObject = dayForecast.getJSONObject(OWM_TEMPERATURE);
+            double high = temperatureObject.getDouble(OWM_MAX);
+            double low = temperatureObject.getDouble(OWM_MIN);
+
+            highAndLow = formatHighLows(high, low);
+            resultStrs[i] = day + " - " + description + " - " + highAndLow;
+        }
+
+        return resultStrs;
+    }
+
+
 
 }
