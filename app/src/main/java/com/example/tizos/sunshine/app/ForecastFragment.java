@@ -1,5 +1,7 @@
 package com.example.tizos.sunshine.app;
 
+import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -11,8 +13,10 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -80,6 +84,32 @@ public class ForecastFragment extends Fragment  {
         //Pasamos Adaptador
         listView.setAdapter(mforecastAdapter);
        // return rootView;
+
+        //Evento para escuchar click
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                //Parametros Mensaje
+                Context contextShow = getActivity().getApplicationContext();
+                String textShow = mforecastAdapter.getItem(position);
+                Integer shortShow = Toast.LENGTH_SHORT;
+
+                Intent showIntent = new Intent(contextShow,DetailActivity.class);
+                showIntent.putExtra("Datos", textShow);
+                startActivity(showIntent);
+
+
+
+                //Mostrar mensaje
+                //Toast toast = Toast.makeText(contextShow, textShow, shortShow);
+                //toast.show();
+
+            }
+        });
+
+
+
         return rootView;
     }
 
