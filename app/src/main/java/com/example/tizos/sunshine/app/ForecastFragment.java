@@ -35,7 +35,10 @@ import java.util.Date;
 public class ForecastFragment extends Fragment  {
 
 
-    private String[] pruebaDearreglo;
+    private ArrayAdapter<String> mforecastAdapter;
+    private ListView listView;
+    private Integer numDays = 7;
+    private String LOCATION = "santiago,chile";
 
     public ForecastFragment() {
     }
@@ -43,46 +46,40 @@ public class ForecastFragment extends Fragment  {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-
 
         FetchWeatherTask weatherTask = new FetchWeatherTask();
-weatherTask.execute("94043");
-        //String[] ListaForecast = weatherTask.execute("94043");
-        //Lista de pronosticos
+        weatherTask.execute(LOCATION);
+
+        View rootView = inflater.inflate(R.layout.fragment_main, container, false);
         String[] ListaForecast = { "Today - Sunny - 30/11",
-                                "Monday - Sunny - 33/10",
-                                "Thuesday - Sunny - 32/8",
-                                "Wednesday - Sunny - 30/11",
+                "Monday - Sunny - 33/10",
+                "Thuesday - Sunny - 32/8",
+                "Wednesday - Sunny - 30/11",
 
-                                "Thursday - Sunny - 29/9",
-                                "Friday - Cloudy - 29/10",
-                                "Saturday - Foggy - 27/6"
+                "Thursday - Sunny - 29/9",
+                "Friday - Cloudy - 29/10",
+                "Saturday - Foggy - 27/6"
 
-    };
-        //Agregamos la lista de pronosticos a un ArrayList de String
+        };
+
         ArrayList<String> list = new ArrayList<String>();
         Collections.addAll(list, ListaForecast);
 
-        //Inicializamos un ArrayAdapter
-        ArrayAdapter<String> forecastAdapter =
+        mforecastAdapter =
                 new ArrayAdapter<String>(
-                    //Context
-                    getActivity(),
-                    //List Item Layout
-                    R.layout.list_item_forecast,
-                    // List View
-                    R.id.list_item_forecast_textview,
-                    //Data
-                    list);
-
-        // Buscamos text View
-        ListView listView = (ListView) rootView.findViewById(R.id.ListViewForecast);
+                        //Context
+                        getActivity(),
+                        //List Item Layout
+                        R.layout.list_item_forecast,
+                        // List View
+                        R.id.list_item_forecast_textview,
+                        //Data
+                        list);
+        listView = (ListView) rootView.findViewById(R.id.ListViewForecast);
 
         //Pasamos Adaptador
-        listView.setAdapter(forecastAdapter);
-
-
+        listView.setAdapter(mforecastAdapter);
+       // return rootView;
         return rootView;
     }
 
@@ -93,7 +90,6 @@ weatherTask.execute("94043");
         protected String[] doInBackground(String... strings) {
             // These two need to be declared outside the try/catch
             // so that they can be closed in the finally block.
-            Log.v(LOG_TAG, "inicie doinbackground");
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
             String postCode = strings[0];
@@ -119,7 +115,7 @@ weatherTask.execute("94043");
                     .appendQueryParameter("q",strings[0])
                     .appendQueryParameter("mode","json")
                     .appendQueryParameter("units","metric")
-                    .appendQueryParameter("cnt","7");
+                    .appendQueryParameter("cnt",numDays.toString());
 
                 String myURL = newUrl.build().toString();
 
@@ -174,15 +170,13 @@ weatherTask.execute("94043");
                 Log.v(LOG_TAG, "Forecast JSON String " + forecastJsonStr);
                 */
 
-                forecastResult = getWeatherDataFromJson(forecastJsonStr,7);
+
 
             } catch (IOException e) {
                 Log.e("PlaceholderFragment", "Error ", e);
                 // If the code didn't successfully get the weather data, there's no point in attempting
                 // to parse it.
                 forecastJsonStr = null;
-            } catch (JSONException e) {
-                e.printStackTrace();
             } finally{
                 if (urlConnection != null) {
                     urlConnection.disconnect();
@@ -196,16 +190,29 @@ weatherTask.execute("94043");
                 }
             }
 
-            Log.v(LOG_TAG, "fin doinbackground");
+            try {
+                forecastResult = getWeatherDataFromJson(forecastJsonStr,numDays);
+            } catch (JSONException e) {
+                Log.e(LOG_TAG, e.getMessage(),e);
+                e.printStackTrace();
+            }
+
+
             return forecastResult;
         }
 
-        protected void onPostExecute(String[] resultado)
-        {
+        protected void onPostExecute(String[] result) {
 
-            pruebaDearreglo=resultado;
-            Log.v(LOG_TAG, "HOLAMUNDO");
+                if(result != null) {
 
+                    //Limpiar Adaptador
+                    mforecastAdapter.clear();
+
+                    for (String dayForecastString : result) {
+                        mforecastAdapter.add(dayForecastString);
+
+                    }
+                }
         }
     }
 
